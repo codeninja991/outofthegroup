@@ -1,24 +1,17 @@
-name: Deploy to GitHub Pages
+name: Deploy to GitHub Pages (Simple)
 
 on:
   push:
     branches: [ main ]
-  pull_request:
-    branches: [ main ]
 
 permissions:
-  contents: read
+  contents: write
   pages: write
   id-token: write
-  deployments: write
 
 jobs:
-  build-and-deploy:
+  build:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    
     steps:
     - name: Checkout
       uses: actions/checkout@v4
@@ -29,19 +22,24 @@ jobs:
         node-version: '20.19.0'
         cache: 'npm'
         
-    - name: Clear npm cache
-      run: npm cache clean --force
-      
     - name: Install dependencies
-      run: |
-        npm install 
+      run: npm install
         
     - name: Build
       run: npm run build
       
-    - name: Deploy to GitHub Pages
-      if: github.ref == 'refs/heads/main'
-      id: deployment
-      uses: actions/deploy-pages@v4
+    - name: Upload artifact
+      uses: actions/upload-pages-artifact@v3
       with:
-        path: ./dist 
+        path: ./dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+    - name: Deploy to GitHub Pages
+      id: deployment
+      uses: actions/deploy-pages@v4 
