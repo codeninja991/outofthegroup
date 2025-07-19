@@ -188,6 +188,7 @@ function OutOfTheGroupGame() {
   const [currentResponder, setCurrentResponder] = useState(0);
   const [currentQuestion, setCurrentQuestion] = useState('');
   const [playerAnswers, setPlayerAnswers] = useState([]);
+  const [selectedQuestions, setSelectedQuestions] = useState([]);
 
   const handleAddPlayer = () => {
     if (playerInput.trim()) {
@@ -206,9 +207,12 @@ function OutOfTheGroupGame() {
           setCurrentRevealIndex(currentRevealIndex + 1);
       } else {
           setFinishReveal(true);
-          // Start the questions phase
+          // Start the questions phase with random questions
+          const shuffledQuestions = [...questions[category]].sort(() => Math.random() - 0.5);
+          const gameQuestions = shuffledQuestions.slice(0, players.length);
+          setSelectedQuestions(gameQuestions);
           setCurrentResponder(0);
-          setCurrentQuestion(questions[category][0]);
+          setCurrentQuestion(gameQuestions[0]);
       }
   };
 
@@ -218,7 +222,7 @@ function OutOfTheGroupGame() {
       
       if (currentResponder < players.length - 1) {
           setCurrentResponder(currentResponder + 1);
-          setCurrentQuestion(questions[category][currentResponder + 1]);
+          setCurrentQuestion(selectedQuestions[currentResponder + 1]);
       } else {
           setShowResults(true);
       }
@@ -271,6 +275,7 @@ function OutOfTheGroupGame() {
     setCurrentResponder(0);
     setCurrentQuestion('');
     setPlayerAnswers([]);
+    setSelectedQuestions([]);
   };
 
   return (
