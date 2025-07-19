@@ -189,6 +189,7 @@ function OutOfTheGroupGame() {
   const [currentQuestion, setCurrentQuestion] = useState('');
   const [playerAnswers, setPlayerAnswers] = useState([]);
   const [selectedQuestions, setSelectedQuestions] = useState([]);
+  const [votingComplete, setVotingComplete] = useState(false);
 
   const handleAddPlayer = () => {
     if (playerInput.trim()) {
@@ -253,8 +254,8 @@ function OutOfTheGroupGame() {
 
   const castVote = (name) => {
     setVotes(prev => ({ ...prev, [name]: (prev[name] || 0) + 1 }));
-    if (Object.values(votes).length + 1 === players.length) {
-      setShowResults(true);
+    if (Object.keys(votes).length + 1 === players.length) {
+      setVotingComplete(true);
     }
   };
 
@@ -276,6 +277,7 @@ function OutOfTheGroupGame() {
     setCurrentQuestion('');
     setPlayerAnswers([]);
     setSelectedQuestions([]);
+    setVotingComplete(false);
   };
 
   return (
@@ -360,22 +362,36 @@ function OutOfTheGroupGame() {
               Submit Answer
             </button>
           </div>
-      ) : (
+      ) : !votingComplete ? (
         <div>
           <h2 className="text-xl font-bold mb-2">Voting Phase</h2>
+          <p className="mb-4 text-gray-600">Who do you think is out of the group?</p>
           {players.map((player, index) => (
             <button key={index} className="block w-full mb-3 bg-red-500 text-white p-3 text-base rounded" onClick={() => castVote(player)}>
               Vote {player}
             </button>
           ))}
-          <button className="mt-4 bg-gray-700 text-white px-6 py-3 sm:px-4 sm:py-2 text-base w-full sm:w-auto rounded" onClick={resetGame}>Play Again</button>
-          <div className="mt-4">
-            <h3 className="font-bold">Imposter was: {players[imposterIndex]}</h3>
-            <h4 className="mt-2">Votes:</h4>
+        </div>
+      ) : (
+        <div>
+          <h2 className="text-xl font-bold mb-4">Game Results</h2>
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+            <h3 className="font-bold text-lg">🎭 The Imposter was: {players[imposterIndex]}!</h3>
+            <p className="text-sm mt-1">They were "out of the group" and didn't know the word!</p>
+          </div>
+          
+          <div className="mb-4">
+            <h4 className="font-bold mb-2">Voting Results:</h4>
             {Object.entries(votes).map(([name, count]) => (
-              <div key={name}>{name}: {count} votes</div>
+              <div key={name} className="mb-1">
+                <span className="font-medium">{name}:</span> {count} vote{count !== 1 ? 's' : ''}
+              </div>
             ))}
           </div>
+          
+          <button className="mt-4 bg-gray-700 text-white px-6 py-3 sm:px-4 sm:py-2 text-base w-full sm:w-auto rounded" onClick={resetGame}>
+            Play Again
+          </button>
         </div>
       )}
     </div>
