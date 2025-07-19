@@ -183,8 +183,11 @@ function OutOfTheGroupGame() {
   const [votes, setVotes] = useState({});
   const [showResults, setShowResults] = useState(false);
   const [currentRevealIndex, setCurrentRevealIndex] = useState(0);
-  const [wordAssignments, setWordAssignments] = useState(0);
+  const [wordAssignments, setWordAssignments] = useState([]);
   const [finishReveal, setFinishReveal] = useState(false);
+  const [currentResponder, setCurrentResponder] = useState(0);
+  const [currentQuestion, setCurrentQuestion] = useState('');
+  const [playerAnswers, setPlayerAnswers] = useState([]);
 
   const handleAddPlayer = () => {
     if (playerInput.trim()) {
@@ -203,6 +206,21 @@ function OutOfTheGroupGame() {
           setCurrentRevealIndex(currentRevealIndex + 1);
       } else {
           setFinishReveal(true);
+          // Start the questions phase
+          setCurrentResponder(0);
+          setCurrentQuestion(questions[category][0]);
+      }
+  };
+
+  const handleAnswerSubmit = (answer) => {
+      const newAnswers = [...playerAnswers, { player: players[currentResponder], answer }];
+      setPlayerAnswers(newAnswers);
+      
+      if (currentResponder < players.length - 1) {
+          setCurrentResponder(currentResponder + 1);
+          setCurrentQuestion(questions[category][currentResponder + 1]);
+      } else {
+          setShowResults(true);
       }
   };
 
@@ -248,6 +266,11 @@ function OutOfTheGroupGame() {
     setQuestionIndex(0);
     setVotes({});
     setShowResults(false);
+    setCurrentRevealIndex(0);
+    setFinishReveal(false);
+    setCurrentResponder(0);
+    setCurrentQuestion('');
+    setPlayerAnswers([]);
   };
 
   return (
@@ -315,26 +338,23 @@ function OutOfTheGroupGame() {
             )}
           </div>
      ) : !showResults ? (
-                                <div className="mt-6">
-                                  <h2 className="text-xl font-bold">Answer Phase</h2>
-                                  <p className="mt-2"><strong>{players[currentResponder]}</strong>, answer this question:</p>
-                                  <p className="italic mt-2">"{currentQuestion}"</p>
-                                  <input
-                                    type="text"
-                                    placeholder="Type your answer"
-                                    onKeyDown={(e) => e.key === 'Enter' && handleAnswerSubmit(e.target.value)}
-                                    className="mt-2 p-2 border w-full"
-                                  />
-                                  <button
-                                    className="mt-2 px-4 py-2 bg-blue-600 text-white"
-                                    onClick={() => handleAnswerSubmit(document.querySelector('input').value)}
-                                  >
-                                    Submit Answer
-                                  </button>
-                                </div>
-                              )}
-                            </div>
-                          );
+          <div className="mt-6">
+            <h2 className="text-xl font-bold">Answer Phase</h2>
+            <p className="mt-2"><strong>{players[currentResponder]}</strong>, answer this question:</p>
+            <p className="italic mt-2">"{currentQuestion}"</p>
+            <input
+              type="text"
+              placeholder="Type your answer"
+              onKeyDown={(e) => e.key === 'Enter' && handleAnswerSubmit(e.target.value)}
+              className="mt-2 p-2 border w-full"
+            />
+            <button
+              className="mt-2 px-4 py-2 bg-blue-600 text-white"
+              onClick={() => handleAnswerSubmit(document.querySelector('input').value)}
+            >
+              Submit Answer
+            </button>
+          </div>
       ) : (
         <div>
           <h2 className="text-xl font-bold mb-2">Voting Phase</h2>
