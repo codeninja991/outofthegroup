@@ -194,7 +194,7 @@ function OutOfTheGroupGame() {
   const [currentVoter, setCurrentVoter] = useState(0);
   const [votingStarted, setVotingStarted] = useState(false);
   const [gameMode, setGameMode] = useState('single'); // 'single' or 'multi'
-  const [rounds, setRounds] = useState(3);
+  const [rounds, setRounds] = useState(5);
   const [currentRound, setCurrentRound] = useState(1);
   const [scores, setScores] = useState({});
   const [roundHistory, setRoundHistory] = useState([]);
@@ -226,11 +226,11 @@ function OutOfTheGroupGame() {
       }
   };
 
-  const handleAnswerSubmit = (answer) => {
+  const handleNextQuestion = () => {
       const newAnswers = [...playerAnswers, { 
           asker: players[currentAsker], 
           responder: players[currentResponder], 
-          answer 
+          answer: "Answered" // Placeholder since we're not collecting actual answers
       }];
       setPlayerAnswers(newAnswers);
       
@@ -458,18 +458,13 @@ function OutOfTheGroupGame() {
           <div className="mt-6">
             <h2 className="text-xl font-bold">Question Phase</h2>
             <p className="mt-2"><strong>{players[currentAsker]}</strong> asks <strong>{players[currentResponder]}</strong>:</p>
-            <p className="italic mt-2">"{currentQuestion}"</p>
-            <input
-              type="text"
-              placeholder="Type your answer"
-              onKeyDown={(e) => e.key === 'Enter' && handleAnswerSubmit(e.target.value)}
-              className="mt-2 p-2 border w-full"
-            />
+            <p className="italic mt-2 mb-4">"{currentQuestion}"</p>
+            <p className="text-sm text-gray-600 mb-4">Discuss the answer together, then click Next when ready.</p>
             <button
-              className="mt-2 px-4 py-2 bg-blue-600 text-white"
-              onClick={() => handleAnswerSubmit(document.querySelector('input').value)}
+              className="px-6 py-3 bg-blue-600 text-white text-base rounded w-full sm:w-auto"
+              onClick={handleNextQuestion}
             >
-              Submit Answer
+              Next Question
             </button>
           </div>
       ) : !votingStarted ? (
