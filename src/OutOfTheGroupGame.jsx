@@ -191,6 +191,8 @@ function OutOfTheGroupGame() {
   const [playerAnswers, setPlayerAnswers] = useState([]);
   const [selectedQuestions, setSelectedQuestions] = useState([]);
   const [votingComplete, setVotingComplete] = useState(false);
+  const [currentVoter, setCurrentVoter] = useState(0);
+  const [votingStarted, setVotingStarted] = useState(false);
 
   const handleAddPlayer = () => {
     if (playerInput.trim()) {
@@ -227,15 +229,19 @@ function OutOfTheGroupGame() {
       }];
       setPlayerAnswers(newAnswers);
       
-      if (currentAsker < players.length - 1) {
+      // Check if this was the last question (each player asks one question)
+      if (newAnswers.length < players.length) {
           // Move to next asker
-          setCurrentAsker(currentAsker + 1);
+          const nextAsker = currentAsker + 1;
+          setCurrentAsker(nextAsker);
           // Next responder is the player after the asker (with wrap-around)
-          const nextResponder = (currentAsker + 2) % players.length;
+          const nextResponder = (nextAsker + 1) % players.length;
           setCurrentResponder(nextResponder);
-          setCurrentQuestion(selectedQuestions[currentAsker + 1]);
+          setCurrentQuestion(selectedQuestions[nextAsker]);
       } else {
-          setShowResults(true);
+          // Start voting phase
+          setVotingStarted(true);
+          setCurrentVoter(0);
       }
   };
 
@@ -264,7 +270,9 @@ function OutOfTheGroupGame() {
 
   const castVote = (name) => {
     setVotes(prev => ({ ...prev, [name]: (prev[name] || 0) + 1 }));
-    if (Object.keys(votes).length + 1 === players.length) {
+    if (currentVoter < players.length - 1) {
+      setCurrentVoter(currentVoter + 1);
+    } else {
       setVotingComplete(true);
     }
   };
@@ -289,6 +297,8 @@ function OutOfTheGroupGame() {
     setPlayerAnswers([]);
     setSelectedQuestions([]);
     setVotingComplete(false);
+    setCurrentVoter(0);
+    setVotingStarted(false);
   };
 
   return (
@@ -355,7 +365,7 @@ function OutOfTheGroupGame() {
               </div>
             )}
           </div>
-     ) : !showResults ? (
+     ) : !votingStarted ? (
           <div className="mt-6">
             <h2 className="text-xl font-bold">Question Phase</h2>
             <p className="mt-2"><strong>{players[currentAsker]}</strong> asks <strong>{players[currentResponder]}</strong>:</p>
@@ -373,15 +383,37 @@ function OutOfTheGroupGame() {
               Submit Answer
             </button>
           </div>
-      ) : !votingComplete ? (
+      ) : !votingStarted ? (
         <div>
           <h2 className="text-xl font-bold mb-2">Voting Phase</h2>
-          <p className="mb-4 text-gray-600">Who do you think is out of the group?</p>
-          {players.map((player, index) => (
-            <button key={index} className="block w-full mb-3 bg-red-500 text-white p-3 text-base rounded" onClick={() => castVote(player)}>
-              Vote {player}
-            </button>
-          ))}
+          <p className="mb-4 text-gray-600">Ready to vote! Click to start.</p>
+          <button 
+            className="bg-red-500 text-white px-6 py-3 text-base rounded w-full sm:w-auto"
+            onClick={() => setVotingStarted(true)}
+          >
+            Start Voting
+          </button>
+        </div>
+      ) : !votingComplete ? (
+        <div className="text-center">
+          <h2 className="text-xl font-bold mb-4">Voting Phase</h2>
+          <p className="mb-4 text-gray-600">Player {currentVoter + 1} of {players.length}</p>
+          
+          <div className="bg-gray-100 p-6 rounded-lg mb-6">
+            <h3 className="text-lg font-semibold mb-4">{players[currentVoter]}, who do you think is out of the group?</h3>
+            <div className="space-y-3">
+              {players.map((player, index) => (
+                <button 
+                  key={index} 
+                  className="block w-full bg-red-500 text-white p-3 text-base rounded hover:bg-red-600 transition-colors"
+                  onClick={() => castVote(player)}
+                  disabled={player === players[currentVoter]}
+                >
+                  Vote for {player}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       ) : (
         <div>
