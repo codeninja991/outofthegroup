@@ -193,6 +193,11 @@ function OutOfTheGroupGame() {
   const [votingComplete, setVotingComplete] = useState(false);
   const [currentVoter, setCurrentVoter] = useState(0);
   const [votingStarted, setVotingStarted] = useState(false);
+  const [gameMode, setGameMode] = useState('single'); // 'single' or 'multi'
+  const [rounds, setRounds] = useState(3);
+  const [currentRound, setCurrentRound] = useState(1);
+  const [scores, setScores] = useState({});
+  const [roundHistory, setRoundHistory] = useState([]);
 
   const handleAddPlayer = () => {
     if (playerInput.trim()) {
@@ -274,7 +279,63 @@ function OutOfTheGroupGame() {
       setCurrentVoter(currentVoter + 1);
     } else {
       setVotingComplete(true);
+      calculateRoundResults(name);
     }
+  };
+
+  const calculateRoundResults = (lastVote) => {
+    const imposterName = players[imposterIndex];
+    const votesForImposter = votes[imposterName] || 0;
+    const totalVotes = Object.values(votes).reduce((sum, count) => sum + count, 0) + 1; // +1 for last vote
+    
+    let roundScores = {};
+    
+    if (votesForImposter === 0) {
+      // Imposter wins (not caught)
+      roundScores[imposterName] = 3;
+      players.forEach(player => {
+        if (player !== imposterName) {
+          roundScores[player] = 0;
+        }
+      });
+    } else {
+      // Imposter caught
+      roundScores[imposterName] = 0;
+      players.forEach(player => {
+        if (player !== imposterName) {
+          roundScores[player] = 1;
+        }
+      });
+      
+      // Bonus for correct guess
+      Object.entries(votes).forEach(([votedPlayer, voteCount]) => {
+        if (votedPlayer === imposterName && voteCount > 0) {
+          // Find who voted for the imposter
+          // For simplicity, give bonus to the last voter if they voted correctly
+          if (lastVote === imposterName) {
+            roundScores[players[currentVoter]] += 1; // +1 bonus for correct guess
+          }
+        }
+      });
+    }
+    
+    // Update total scores
+    setScores(prev => {
+      const newScores = { ...prev };
+      Object.entries(roundScores).forEach(([player, points]) => {
+        newScores[player] = (newScores[player] || 0) + points;
+      });
+      return newScores;
+    });
+    
+    // Store round history
+    setRoundHistory(prev => [...prev, {
+      round: currentRound,
+      imposter: imposterName,
+      votes: { ...votes, [lastVote]: (votes[lastVote] || 0) + 1 },
+      scores: roundScores,
+      imposterCaught: votesForImposter > 0
+    }]);
   };
 
   const resetGame = () => {
@@ -299,6 +360,34 @@ function OutOfTheGroupGame() {
     setVotingComplete(false);
     setCurrentVoter(0);
     setVotingStarted(false);
+    setCurrentRound(1);
+    setScores({});
+    setRoundHistory([]);
+  };
+
+  const nextRound = () => {
+    if (currentRound < rounds) {
+      setCurrentRound(currentRound + 1);
+      setGameStarted(false);
+      setCategory('');
+      setWordAssignments([]);
+      setImposterIndex(null);
+      setRevealed(false);
+      setAnswers([]);
+      setQuestionIndex(0);
+      setVotes({});
+      setShowResults(false);
+      setCurrentRevealIndex(0);
+      setFinishReveal(false);
+      setCurrentAsker(0);
+      setCurrentResponder(0);
+      setCurrentQuestion('');
+      setPlayerAnswers([]);
+      setSelectedQuestions([]);
+      setVotingComplete(false);
+      setCurrentVoter(0);
+      setVotingStarted(false);
+    }
   };
 
   return (
@@ -417,10 +506,14 @@ function OutOfTheGroupGame() {
         </div>
       ) : (
         <div>
-          <h2 className="text-xl font-bold mb-4">Game Results</h2>
+          <h2 className="text-xl font-bold mb-4">Round {currentRound} Results</h2>
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
             <h3 className="font-bold text-lg">🎭 The Imposter was: {players[imposterIndex]}!</h3>
-            <p className="text-sm mt-1">They were "out of the group" and didn't know the word!</p>
+            <p className="text-sm mt-1">
+              {roundHistory.length > 0 && roundHistory[roundHistory.length - 1].imposterCaught 
+                ? "They were caught by the group!" 
+                : "They successfully fooled everyone!"}
+            </p>
           </div>
           
           <div className="mb-4">
@@ -431,10 +524,39 @@ function OutOfTheGroupGame() {
               </div>
             ))}
           </div>
+
+          {roundHistory.length > 0 && (
+            <div className="mb-4">
+              <h4 className="font-bold mb-2">Round {currentRound} Points:</h4>
+              {Object.entries(roundHistory[roundHistory.length - 1].scores).map(([player, points]) => (
+                <div key={player} className="mb-1">
+                  <span className="font-medium">{player}:</span> +{points} points
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="mb-4">
+            <h4 className="font-bold mb-2">Total Scores:</h4>
+            {Object.entries(scores).map(([player, totalPoints]) => (
+              <div key={player} className="mb-1">
+                <span className="font-medium">{player}:</span> {totalPoints} points
+              </div>
+            ))}
+          </div>
           
-          <button className="mt-4 bg-gray-700 text-white px-6 py-3 sm:px-4 sm:py-2 text-base w-full sm:w-auto rounded" onClick={resetGame}>
-            Play Again
-          </button>
+          {currentRound < rounds ? (
+            <button className="mt-4 bg-green-600 text-white px-6 py-3 sm:px-4 sm:py-2 text-base w-full sm:w-auto rounded" onClick={nextRound}>
+              Next Round ({currentRound + 1} of {rounds})
+            </button>
+          ) : (
+            <div>
+              <h3 className="text-lg font-bold mb-2">🏆 Game Complete!</h3>
+              <button className="mt-4 bg-gray-700 text-white px-6 py-3 sm:px-4 sm:py-2 text-base w-full sm:w-auto rounded" onClick={resetGame}>
+                New Game
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>
