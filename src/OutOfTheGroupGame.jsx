@@ -185,6 +185,7 @@ function OutOfTheGroupGame() {
   const [currentRevealIndex, setCurrentRevealIndex] = useState(0);
   const [wordAssignments, setWordAssignments] = useState([]);
   const [finishReveal, setFinishReveal] = useState(false);
+  const [currentAsker, setCurrentAsker] = useState(0);
   const [currentResponder, setCurrentResponder] = useState(0);
   const [currentQuestion, setCurrentQuestion] = useState('');
   const [playerAnswers, setPlayerAnswers] = useState([]);
@@ -208,22 +209,31 @@ function OutOfTheGroupGame() {
           setCurrentRevealIndex(currentRevealIndex + 1);
       } else {
           setFinishReveal(true);
-          // Start the questions phase with random questions
+          // Start the questions phase with round-robin format
           const shuffledQuestions = [...questions[category]].sort(() => Math.random() - 0.5);
           const gameQuestions = shuffledQuestions.slice(0, players.length);
           setSelectedQuestions(gameQuestions);
-          setCurrentResponder(0);
+          setCurrentAsker(0);
+          setCurrentResponder(1); // First player asks second player
           setCurrentQuestion(gameQuestions[0]);
       }
   };
 
   const handleAnswerSubmit = (answer) => {
-      const newAnswers = [...playerAnswers, { player: players[currentResponder], answer }];
+      const newAnswers = [...playerAnswers, { 
+          asker: players[currentAsker], 
+          responder: players[currentResponder], 
+          answer 
+      }];
       setPlayerAnswers(newAnswers);
       
-      if (currentResponder < players.length - 1) {
-          setCurrentResponder(currentResponder + 1);
-          setCurrentQuestion(selectedQuestions[currentResponder + 1]);
+      if (currentAsker < players.length - 1) {
+          // Move to next asker
+          setCurrentAsker(currentAsker + 1);
+          // Next responder is the player after the asker (with wrap-around)
+          const nextResponder = (currentAsker + 2) % players.length;
+          setCurrentResponder(nextResponder);
+          setCurrentQuestion(selectedQuestions[currentAsker + 1]);
       } else {
           setShowResults(true);
       }
@@ -273,6 +283,7 @@ function OutOfTheGroupGame() {
     setShowResults(false);
     setCurrentRevealIndex(0);
     setFinishReveal(false);
+    setCurrentAsker(0);
     setCurrentResponder(0);
     setCurrentQuestion('');
     setPlayerAnswers([]);
@@ -346,8 +357,8 @@ function OutOfTheGroupGame() {
           </div>
      ) : !showResults ? (
           <div className="mt-6">
-            <h2 className="text-xl font-bold">Answer Phase</h2>
-            <p className="mt-2"><strong>{players[currentResponder]}</strong>, answer this question:</p>
+            <h2 className="text-xl font-bold">Question Phase</h2>
+            <p className="mt-2"><strong>{players[currentAsker]}</strong> asks <strong>{players[currentResponder]}</strong>:</p>
             <p className="italic mt-2">"{currentQuestion}"</p>
             <input
               type="text"
